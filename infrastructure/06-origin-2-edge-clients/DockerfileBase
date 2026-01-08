@@ -1,0 +1,11 @@
+FROM nginx:latest
+
+# Remover quaisquer arquivos de configuração duplicados
+RUN rm -rf /etc/nginx/conf.d/* /etc/nginx/sites-enabled/*
+
+# Copiar o conteúdo dos diretórios para os containers caso queira o conteúdo interno nos containers, senão usar volumes
+# COPY ./html-origin /usr/share/nginx/html
+# COPY ./html-edge /usr/share/nginx/html
+
+# Copiar os arquivos de configuração [Estava dando erro de duplicate upstream pois duplicava os arquivos nos containers]
+# COPY ./conf.d /etc/nginx/conf.d

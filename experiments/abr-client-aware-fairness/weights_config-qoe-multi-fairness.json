@@ -1,0 +1,13 @@
+{
+    "avg_throughput": 0.15,
+    "avg_buffer_level": 0.08,
+    "latency": -0.09,
+    "jitter": -0.04,
+    "quality_changes_total": -0.05,
+    "composite_qoe_score": 0.30,
+    "tf_qoe": 0.18,
+    "bfi": 0.05,
+    "qfs": 0.12,
+    "saf": 0.08
+  }
+  

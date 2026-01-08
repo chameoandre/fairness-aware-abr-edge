@@ -1,0 +1,45 @@
+# === NOTES ================================================
+# To make Torch compatibility with ARM64 it's necessary check version os packges all the time. 
+
+# to install all packages again use
+# pip install -r requirements.txt
+
+
+# ==========================================================
+
+# ==== PACKETS WITH DEFINED VERSION ==== VERSION02
+# gym==0.26.2
+gymnasium==0.29.1
+shimmy==0.2.1
+selenium==4.10.0
+stable-baselines3==2.4.1
+# matplotlib==3.7.1
+matplotlib==3.10.0
+# pandas==1.5.3
+pandas==2.2.3
+# webdriver-manager==3.8.6
+webdriver-manager==4.0.2
+psutil==5.9.8
+# torch==1.13.1
+# torchvision==0.14.1
+# torchaudio==0.13.1
+
+
+# ==== PACKETS WITHOUT VERSION  =====
+# gym
+# torch
+# torchvision
+# torchaudio
+# seaborn
+scikit-learn
+# shimmy
+# selenium
+# stable_baselines3
+# matplotlib
+# pandas
+# webdriver_manager
+
+
+# INSTALLING MANUAL MODE [BY CONSOLE
+    # pip install gym==0.26.2 shimmy==0.2.1 selenium==4.10.0 stable-baselines3==2.4.1 matplotlib==3.7.1 pandas==1.5.3 webdriver-manager==3.8.6 torch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1
+

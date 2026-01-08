@@ -1,0 +1,332 @@
+FROM seleniarm/node-chromium:latest
+
+# Defina o usuário root
+USER root
+
+# Defina variáveis de ambiente para automatizar a configuração do tzdata
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Sao_Paulo
+
+# Checking Architecture Version
+RUN uname -m
+
+# Install packages
+RUN apt-get update && apt-get install -y --fix-missing \
+    --no-install-recommends \
+    autoconf \
+    automake \
+    autoconf \
+    apache2 \
+    apache2-dev \
+    bridge-utils \
+    build-essential \
+    chromium \
+    cmake \
+    curl \
+    dumb-init \
+    dnsmasq \
+    firefox-esr \
+    gcc\
+    git \
+    gnupg \
+    g++ \
+    iproute2 \
+    iptables \
+    iputils-ping \
+    libappindicator3-1 \
+    libcurl4-openssl-dev \
+    libboost-all-dev \
+    libdrm2 \
+    libevent-dev \
+    libegl1 \
+    libncurses6 \
+    libncurses-dev \
+    libgdbm-dev \
+    libjsoncpp-dev \
+    libgbm1 \
+    libpci3 \
+    libnss3 \
+    libnss3-dev \
+    libffi-dev \
+    libprotobuf-dev \
+    libreadline-dev \
+    libssl-dev \
+    libpango1.0-dev \
+    libsqlite3-dev \
+    libtool \ 
+    libtool-bin \
+    libtinfo6 \
+    libxcomposite1 \
+    libxcb1 \
+    libxcb1-dev \
+    libxcb-present-dev \
+    libxkbcommon0 \
+    libxrandr2 \
+    libxss1 \
+    lxde \
+    make \
+    nano \
+    net-tools \
+    openjdk-11-jdk \
+    pkg-config \
+    protobuf-compiler \
+    software-properties-common \
+    ssl-cert \
+    tightvncserver \
+    unzip \
+    vim \
+    wget \
+    x11vnc \
+    xauth \
+    xvfb \
+    zlib1g-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# GCC COMPILATION IF NECESSARY
+# =======================================
+RUN git clone https://github.com/open-source-parsers/jsoncpp.git /jsoncpp && \
+    cd /jsoncpp && mkdir build && cd build && \
+    cmake .. && make -j$(nproc) && make install && \
+    rm -rf /jsoncpp
+
+# MAHIMAHI COMPILATION
+# =======================================
+# RUN git clone https://github.com/ravinet/mahimahi.git /mahimahi && \
+#     cd /mahimahi && \
+#     ./autogen.sh && \
+#     ./configure --enable-external && \    
+#     make && \
+#     make install && \
+#     rm -rf /mahimahi
+
+# MAHIMAHI COMPILATION WITH MM-EXTERNAL SUPPORT for 64-bit
+RUN git clone https://github.com/ravinet/mahimahi.git /mahimahi && \
+    cd /mahimahi && \
+    wget https://raw.githubusercontent.com/open-source-parsers/jsoncpp/master/include/json/json.h -O src/mm-external.h && \
+    wget https://raw.githubusercontent.com/open-source-parsers/jsoncpp/master/src/lib_json/json_reader.cpp -O src/mm-external.cpp && \
+    ./autogen.sh && \
+    # CFLAGS="-m64" CXXFLAGS="-m64" ./configure --enable-external && \
+    ./configure --enable-external && \
+    make -j$(nproc) && \
+    make install && \
+    if [ -f /mahimahi/src/mm-external ]; then \
+        cp /mahimahi/src/mm-external /usr/local/bin/; \
+    else \
+        echo "mm-external not found in source directory!"; \
+    fi && \
+    rm -rf /mahimahi
+
+# Verificar se mm-external foi instalado e ajustar permissões
+RUN if [ -f /usr/local/bin/mm-external ]; then \
+        chmod u+s /usr/local/bin/mm-external; \
+    else \
+        echo "mm-external not found in /usr/local/bin!"; \
+    fi
+
+# Listar os binários do MahiMahi (verificação da instalação)
+RUN ls -l /usr/local/bin/mm-* || echo "MahiMahi binaries not found in /usr/local/bin"
+
+
+# Verificar se mm-external foi instalado
+# RUN which mm-external || echo "mm-external not found!"
+
+# Conceder permissões ao mm-external
+# RUN chmod u+s /usr/local/bin/mm-external
+
+# Configurar permissões para o Mahimahi
+RUN chmod u+s /usr/local/bin/mm-* && \
+    chmod u+s /usr/sbin/iptables
+
+RUN ls -l /usr/local/bin/mm-* || echo "MahiMahi binaries not found in /usr/local/bin"
+
+# Crie o usuário MahiMahi
+# RUN useradd -m -s /bin/bash mahimahi-user && \
+#     passwd -d mahimahi-user && \
+#     mkdir -p /home/mahimahi-user && \
+#     chown -R mahimahi-user:mahimahi-user /home/mahimahi-user
+
+
+# Ajustar permissões dinamicamente em tempo de execução
+RUN mkdir -p /scripts && chown -R mahimahi-user:mahimahi-user /scripts
+
+# Conceder capacidades ao binário ping para usuários não root
+RUN setcap cap_net_raw+p /bin/ping
+
+
+# Adicionar o usuário ao grupo sudo (opcional)
+RUN usermod -aG sudo mahimahi-user
+
+
+# Crie um novo usuário
+RUN useradd -m -s /bin/bash mahimahi-user && \
+    echo "mahimahi-user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# # Conceda permissões ao novo usuário (se necessário)
+RUN chown -R mahimahi-user:mahimahi-user /scripts
+
+# # Troque para o novo usuário
+# USER mahimahi-user
+
+
+# BLAZEMETER INSTALATION
+# =======================================
+
+# Baixe e instale o JMeter
+    # RUN wget https://downloads.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz && \
+    #     tar -xvzf apache-jmeter-5.6.3.tgz && \
+    #     mv apache-jmeter-5.6.3 /opt/jmeter && \
+    #     rm apache-jmeter-5.6.3.tgz
+
+# Baixe e instale o plugin HLS do BlazeMeter
+    # RUN wget https://jmeter-plugins.org/files/packages/bzm-hls-3.1.zip -O /opt/bzm-hls.zip && \
+    #     unzip /opt/bzm-hls.zip -d /opt/ && \
+    #     find /opt/ -name "jmeter-bzm-hls-3.1.jar" && \
+    #     cp $(find /opt/ -name "jmeter-bzm-hls-3.1.jar") /opt/jmeter/lib/ && \
+    #     rm -rf /opt/hls-blazemeter /opt/bzm-hls.zip
+
+# Baixe e instale o JMeter Plugins Standard
+    # RUN wget https://jmeter-plugins.org/downloads/file/JMeterPlugins-Standard-1.4.0.zip -O /opt/jmeter-plugins-standard.zip && \
+    #     unzip /opt/jmeter-plugins-standard.zip -d /opt/ && \
+    #     cp /opt/lib/ext/*.jar /opt/jmeter/lib/ext/ && \
+    #     cp /opt/lib/*.jar /opt/jmeter/lib/ && \
+    #     rm -rf /opt/jmeter-plugins-standard.zip /opt/lib
+
+# Baixe e instale o plugin Parallel HTTP Sampler
+    # RUN wget https://jmeter-plugins.org/files/packages/bzm-parallel-0.12.zip -O /opt/jpgc-parallel.zip && \
+    # unzip /opt/jpgc-parallel.zip -d /opt/ && \
+    # cp /opt/lib/ext/jmeter-parallel-*.jar /opt/jmeter/lib/ext/ && \
+    # rm -rf /opt/jpgc-parallel.zip /opt/lib
+
+
+# Set JMeter properties [for HTML report generation]
+    # RUN echo "jmeter.reportgenerator.apdex_satisfied_threshold=500" >> /opt/jmeter/bin/user.properties && \
+    #     echo "jmeter.reportgenerator.apdex_tolerated_threshold=1500" >> /opt/jmeter/bin/user.properties
+
+# Defina a variável de ambiente para o JMeter
+    # ENV JMETER_HOME /opt/jmeter
+    # ENV PATH="/opt/jmeter/bin:${PATH}"
+
+# Copiar o script de inicialização do XVb
+# COPY ./init-scripts/start.sh /usr/local/bin/start.sh
+
+# # Configuração do Xvfb
+# RUN Xvfb :99 -screen 0 1920x1080x24 &
+
+# # Defina a variável DISPLAY para que o Chromium saiba onde se conectar
+# ENV DISPLAY=:99
+
+# == VIRTUAL ENV CREATION ==
+# COPY init.sh script to create virtualEnv
+COPY ./init-scripts/init.sh /usr/local/bin/init.sh
+RUN chmod +x /usr/local/bin/init.sh
+
+# Copie o arquivo requirements.txt para o diretório de trabalho
+
+# Copiar o arquivo requirements.txt para um local fixo
+COPY requirements.txt /config/requirements.txt
+# COPY requirements.txt /scripts/requirements.txt
+COPY ./init-scripts/chromium-install.sh /scripts/chromium-install.sh
+# COPY . /scripts
+
+# Defina o diretório de trabalho
+WORKDIR /scripts
+
+
+# PYTHON 3.10 INSTALATION [ARM 64]
+# =======================================
+# Adicione o repositório para instalar Python 3.10
+# RUN add-apt-repository ppa:deadsnakes/ppa && \
+
+# == PYTHON COMPILATION ==
+# ==============================
+# Baixar e compilar o Python 3.10
+RUN wget https://www.python.org/ftp/python/3.10.9/Python-3.10.9.tgz && \
+    tar -xzf Python-3.10.9.tgz && \
+    cd Python-3.10.9 && \
+    ./configure --enable-optimizations && \
+    make -j$(nproc) && \
+    make altinstall && \
+    cd .. && \
+    rm -rf Python-3.10.9 Python-3.10.9.tgz
+
+# Garantir que o Python 3.10 está instalado
+RUN python3.10 --version
+
+
+# RUN apt-get update && \
+#     apt-get install -y python3.10 python3.10-venv python3.10-dev
+
+# Criar e configurar o ambiente virtual com Python 3.10
+# RUN rm -rf /venv && \
+#     python3.10 -m venv /scripts/venv && \
+#     /scripts/venv/bin/python3.10 -m ensurepip && \
+#     /scripts/venv/bin/python3.10 -m pip install --upgrade pip setuptools wheel --no-cache-dir && \
+#     /scripts/venv/bin/python3.10 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cpu && \
+#     /scripts/venv/bin/python3.10 -m pip install -r /scripts/requirements.txt --no-cache-dir && \
+#     /scripts/venv/bin/pip list
+
+# Criar e configurar o ambiente virtual com Python 3.10
+# RUN python3.10 -m venv /scripts/venv && \
+#     /scripts/venv/bin/python -m ensurepip && \
+#     /scripts/venv/bin/pip install --upgrade pip setuptools wheel && \
+#     /scripts/venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cpu && \
+#     /scripts/venv/bin/pip install -r /scripts/requirements.txt
+
+# Crie e ative um ambiente virtual
+# RUN python3 -m venv /scripts/venv
+# RUN python3 -m venv /scripts/venv && \
+#     /scripts/venv/bin/python -m ensurepip && \
+#     /scripts/venv/bin/pip install --upgrade pip setuptools wheel && \
+#     /scripts/venv/bin/pip install -r /scripts/requirements.txt
+
+# Instale os pacotes listados no requirements.txt
+# RUN /scripts/venv/bin/pip install --upgrade pip setuptools wheel
+# RUN /scripts/venv/bin/pip install -r /scripts/requirements.txt
+
+# RUN source /scripts/venv/bin/activate
+# CMD ["/scripts/venv/bin/python", "nomescript.py"]
+
+# PYTorch Instalation [adjusting for Arm64 architecture]
+# RUN /scripts/venv/bin/pip install -r /scripts/requirements.txt --index-url https://download.pytorch.org/whl/cpu
+# RUN /scripts/venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# RUN /scripts/venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cpu
+
+# Verifique os pacotes instalados (opcional para debug)
+# RUN /scripts/venv/bin/pip list
+
+# Configurações para permitir conexões remotas
+COPY jmeter.properties /opt/jmeter/bin/jmeter.properties
+
+# Exponha a porta 4444 [], 1099 [jmeter] e 5900 [VNC]
+EXPOSE 4444 1099 5900
+
+
+# == COPY INITIALIZATION SCRIPT ==
+COPY ./init-scripts/init.sh /usr/local/bin/init.sh
+RUN chmod +x /usr/local/bin/init.sh
+
+
+# Crie um script de inicialização para o Chromium com Xvfb
+COPY ./init-scripts/start_chromium.sh /usr/local/bin/start_chromium.sh
+RUN chmod +x /usr/local/bin/start_chromium.sh
+
+
+# Copie o script de inicialização do VNC
+COPY ./init-scripts/start_vnc.sh /usr/local/bin/start_vnc.sh
+RUN chmod +x /usr/local/bin/start_vnc.sh
+
+
+# Comando para iniciar o VNC e o ambiente gráfico
+ENTRYPOINT ["/usr/local/bin/init.sh"]
+
+# Inicie o chromium
+# Use o script de inicialização para iniciar o Chromium com Xvfb e dumb-init
+# ENTRYPOINT ["/usr/bin/dumb-init", "--", "/usr/local/bin/start_chromium.sh"]
+
+# Defina o comando padrão para abrir um shell interativo com o ambiente virtual ativado
+# CMD ["/bin/bash", "-c", "source /scripts/venv/bin/activate && exec /bin/bash"]
+
+# # Inicie o JMeter como servidor
+# CMD ["jmeter-server"]

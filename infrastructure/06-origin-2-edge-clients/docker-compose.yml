@@ -1,0 +1,226 @@
+# UTILITY COMMANDS:
+
+# To build before use in docker-compose:
+
+# SERVER IMAGES [Load Balancer, Edge1, Edge2 and Origin-server]
+# docker build -t custom-nginx:latest -f DockerfileClient .
+# docker build -t custom-server-debian:bullseye-slim -f 02-DockerfileServer . #TENTATIVE
+
+# CLIENT IMAGES [G1, G2 and G3 group]
+# docker build -t custom-seleniumarm/node-chromium:latest -f DockerfileClient .
+
+
+# version: '3'
+# == DOCKER COMPOSE BUILD AND SETTING UP ==  
+  # docker-compose build && docker-compose up
+
+# == USE FOR STOP OR UP ALL STACK ==
+  # 1) Access the refered directory 
+  # 2) docker-compose up --build
+  # 3) docker-compose down
+
+# == VNC PASSWORD== 
+# vncpassword
+
+# For BUILDING IMAGE WITHOUT CACHE [for use cache only remove --no-cache]
+  #  docker build --no-cache -t custom-seleniumarm/node-chromium:v2.0 -f DockerfileClient .
+  #  docker build --no-cache -t custom-seleniumarm/node-chromium:v2.1 -f DockerfileClient .
+
+
+services:
+  # origin-server:
+  #   # image: nginx:latest
+  #   image: custom-nginx:latest
+  #   container_name: origin-server
+  #   volumes:
+  #     - ./html-origin:/usr/share/nginx/html
+  #     - ./conf.d/origin.conf:/etc/nginx/conf.d/default.conf
+  #   ports:
+  #     - "8081:80"
+  #   networks:
+  #     bridge-streaming:
+  #       ipv4_address: 172.25.0.2
+
+  edge1:
+    image: nginx:latest
+    # image: custom-nginx:latest
+    # build:
+    #   context: .
+    #   dockerfile: DockerfileServer
+    container_name: edge1
+    volumes:
+      - ./html-edge:/usr/share/nginx/html
+      - ./conf.d/edge1.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx_logs/edge1:/var/log/nginx
+    ports:
+      - "8082:80"
+    networks:
+      bridge-streaming:
+        ipv4_address: 172.25.0.4
+
+  edge2:
+    image: nginx:latest
+    # image: custom-nginx:latest
+    container_name: edge2
+    volumes:
+      - ./html-edge:/usr/share/nginx/html
+      - ./conf.d/edge2.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx_logs/edge2:/var/log/nginx
+    ports:
+      - "8083:80"
+    networks:
+      bridge-streaming:
+        ipv4_address: 172.25.0.5
+
+  load-balancer:
+    image: nginx:latest
+    # image: custom-nginx:latest
+    # build:
+    #   context: .
+    #   dockerfile: DockerfileServer
+    container_name: load-balancer-server
+    volumes:
+      - ./conf.d/load_balancer.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx_logs/load-balancer:/var/log/nginx
+    ports:
+      - "8080:80"
+    # command: nginx -g "daemon off;" -c /etc/nginx/conf.d/default.conf
+    networks:
+      bridge-streaming:
+        ipv4_address: 172.25.0.3
+
+  client-g1:
+    # image: seleniarm/node-chromium:latest
+    # image: custom-seleniumarm/node-chromium:latest
+    image: custom-seleniumarm/node-chromium:v2.0
+    # build:
+    #   context: .
+    #   dockerfile: DockerfileClient
+    container_name: client-g1
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      # - /Users/chameoandre/Google-Drive-chameoandre/APRENDIZADO-TECNOLOGIAS/experimentos-doutorado-abr-streaming/selenium-scripts/experiment-3-selenium-webdriver-qoe-fairness:/scripts
+      # - /Users/chameoandre/Google-Drive-chameoandre/APRENDIZADO-TECNOLOGIAS/experimentos-doutorado-abr-streaming/selenium-scripts/experiment-4-rl-agent-dash:/scripts
+      # - ../../selenium-scripts/experiment-3-rl-agent-dash/traces:/traces # Network Traces directory
+      # - ../../selenium-scripts/experiment-3-rl-agent-dash:/scripts
+      # - ./init-scripts:/init-scripts
+      # - /tmp/.X11-unix:/tmp/.X11-unix
+      # - ./jmeter.properties:/opt/jmeter/bin/jmeter.properties
+      # - ./nginx_logs:/scripts/logs
+      - ${TRACES_DIR}:/traces  # Network Traces directory
+      - ${SCRIPTS_DIR}:/scripts
+      - ${INIT_SCRIPTS}:/init-scripts
+      - ${X11_SOCKET}:/tmp/.X11-unix
+      - ${JMETER_PROPERTIES}:/opt/jmeter/bin/jmeter.properties
+      - ${NGINX_LOGS}:/scripts/logs
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    tty: true
+    stdin_open: true
+    # networks:
+    #   bridge-streaming:
+    #     ipv4_address: 172.25.0.10
+    network_mode: "host"
+    ports:
+      - "1099:1099"  # Expondo a porta para conexões remotas do JMeter
+      - "4044:4044"
+      - "5910:5900" # Acesso VNC
+    # entrypoint: /init-scripts/init.sh
+
+  # === client2: ====
+  client-g2:
+    # image: custom-seleniumarm/node-chromium:latest
+    image: custom-seleniumarm/node-chromium:v2.0
+
+    # build:
+    #   context: .
+    #   dockerfile: DockerfileClient
+    container_name: client-g2
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+    # - /Users/chameoandre/Google-Drive-chameoandre/APRENDIZADO-TECNOLOGIAS/experimentos-doutorado-abr-streaming/selenium-scripts/experiment-3-selenium-webdriver-qoe-fairness:/scripts
+      # - /Users/chameoandre/Google-Drive-chameoandre/APRENDIZADO-TECNOLOGIAS/experimentos-doutorado-abr-streaming/selenium-scripts/experiment-4-rl-agent-dash:/scripts
+      # - ../../selenium-scripts/experiment-3-rl-agent-dash/traces:/traces # Network Traces directory
+      # - ../../selenium-scripts/experiment-3-rl-agent-dash:/scripts
+      # - ./init-scripts:/init-scripts
+      # - /tmp/.X11-unix:/tmp/.X11-unix
+      # - ./jmeter.properties:/opt/jmeter/bin/jmeter.properties
+      # - ./nginx_logs:/scripts/logs
+      - ${TRACES_DIR}:/traces  # Network Traces directory
+      - ${SCRIPTS_DIR}:/scripts
+      - ${INIT_SCRIPTS}:/init-scripts
+      - ${X11_SOCKET}:/tmp/.X11-unix
+      - ${JMETER_PROPERTIES}:/opt/jmeter/bin/jmeter.properties
+      - ${NGINX_LOGS}:/scripts/logs
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    tty: true
+    stdin_open: true
+    networks:
+      bridge-streaming:
+        ipv4_address: 172.25.0.11
+    ports:
+      - "1100:1099"  # Expondo a porta para conexões remotas do JMeter
+      - "4045:4044"
+      - "5911:5900" # Acesso VNC
+
+
+  # === client3: ===
+  clientg3:
+    # image: custom-seleniumarm/node-chromium:latest
+    image: custom-seleniumarm/node-chromium:v2.0
+    # build:
+    #   context: .
+    #   dockerfile: DockerfileClient
+    container_name: client-g3
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+    # - /Users/chameoandre/Google-Drive-chameoandre/APRENDIZADO-TECNOLOGIAS/experimentos-doutorado-abr-streaming/selenium-scripts/experiment-3-selenium-webdriver-qoe-fairness:/scripts
+      # - /Users/chameoandre/Google-Drive-chameoandre/APRENDIZADO-TECNOLOGIAS/experimentos-doutorado-abr-streaming/selenium-scripts/experiment-4-rl-agent-dash:/scripts
+      # - ../../selenium-scripts/experiment-3-rl-agent-dash/traces:/traces # Network Traces directory
+      # - ../../selenium-scripts/experiment-3-rl-agent-dash:/scripts
+      # - ./init-scripts:/init-scripts
+      # - /tmp/.X11-unix:/tmp/.X11-unix
+      # - ./jmeter.properties:/opt/jmeter/bin/jmeter.properties
+      # - ./nginx_logs:/scripts/logs
+      - ${TRACES_DIR}:/traces  # Network Traces directory
+      - ${SCRIPTS_DIR}:/scripts
+      - ${INIT_SCRIPTS}:/init-scripts
+      - ${X11_SOCKET}:/tmp/.X11-unix
+      - ${JMETER_PROPERTIES}:/opt/jmeter/bin/jmeter.properties
+      - ${NGINX_LOGS}:/scripts/logs
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    tty: true
+    stdin_open: true
+    networks:
+      bridge-streaming:
+        ipv4_address: 172.25.0.12
+    ports:
+      - "1101:1099"
+      - "4046:4044"
+      - "5912:5900"
+  
+  # client4:
+
+
+networks:
+  bridge-streaming:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DASH.js Player</title>
+    <!-- <script src="http://cdn.dashjs.org/latest/dash.all.debug.js"></script> -->
+    <script src="js/dash.all.debug.js"></script>
+    <!-- <script src="functions.js"></script> -->
+    <style>
+        .metrics {
+            margin-top: 20px;
+        }
+        .metric {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Testando o Video Player Dash.js</h1>
+    <video id="videoPlayer" controls muted></video>
+    <div class="metrics">
+        <div class="metric" id="averageThroughput">Average Throughput: </div>
+        <div class="metric" id="currentQuality">Current Quality: </div>
+        <div class="metric" id="droppedFrames">Dropped Frames: </div>
+        <div class="metric" id="isBuffering">Is Buffering: </div>
+        <div class="metric" id="currentBufferLevel">Current Buffer Level: </div>
+        <div class="metric" id="bufferEvents">Buffer Events: </div>
+        <div class="metric" id="bufferLength">Buffer Length: </div>
+        <div class="metric" id="currentRepresentationSwitch">Current Representation Switch: </div>
+        <div class="metric" id="startupDelay">Startup Delay: </div>
+        <div class="metric" id="qualityLevels">Quality Levels: </div>
+        <div class="metric" id="currentPlaybackTime">Current Playback time: </div>
+    </div>
+    <script>
+        var url = "http://172.25.0.3:80/dash/master.mpd"; // Internal Docker Link for load-balancer
+        var player = dashjs.MediaPlayer().create();
+        
+        // Injecting Listeners to capture events before inicialization
+        // injectPlayerEventListeners();
+
+        player.initialize(document.querySelector("#videoPlayer"), url, true);
+        // player.setConfig({
+        //     'streaming': {
+        //         'buffer': {
+        //             'initialBufferSize': 2, // Tamanho do buffer inicial em segundos
+        //             'bufferTime': 2 // Tamanho do buffer inicial em segundos
+        //         }
+        //     }
+        // });
+        // window.player = player
+
+        function getAvgThroughput() {
+            return player.getAverageThroughput('video');
+        }
+
+        function getCurrentBufferLevel() {
+            var dashMetrics = player.getDashMetrics();
+            var bufferLevel = dashMetrics.getCurrentBufferLevel('video');
+            return bufferLevel ? bufferLevel : 0;
+        }
+
+        function getDroppedFrames() {
+            var dashMetrics = player.getDashMetrics();
+            var droppedFrames = dashMetrics.getCurrentDroppedFrames('video');
+            return droppedFrames ? droppedFrames.droppedFrames : 0;
+        }
+
+        function getQuality() {
+            return player.getQualityFor('video');
+        }
+
+        function isBuffering() {
+            var dashMetrics = player.getDashMetrics();
+            var bufferingState = dashMetrics.getCurrentBufferState('video');
+            // return bufferingState ? bufferingState.state === "buffering" : false;
+
+            return bufferingState.state;
+        }
+
+        function getBufferEvents() {
+            var dashMetrics = player.getDashMetrics();
+            return dashMetrics.getCurrentBufferState('video').state === "buffering";
+        }
+
+        function getBufferLength() {
+            var dashMetrics = player.getDashMetrics();
+            return dashMetrics.getCurrentBufferLevel('video');
+        }
+
+        function getActualRepresentation() {
+            var dashMetrics = player.getDashMetrics();
+            return dashMetrics.getCurrentRepresentationSwitch('video').to;
+        }
+
+        function getQualityLevels() {
+            return player.getBitrateInfoListFor('video');
+        }
+
+        function captureStartupDelay() {
+            window.startupDelay = {
+                startTime: Date.now(),
+                endTime: null
+            };
+
+
+            
+            // THIS IS AN EVENT TRIGGER FUNCTION
+            player.on(dashjs.MediaPlayer.events.PLAYBACK_PLAYING, function() {
+                window.startupDelay.endTime = Date.now();
+                window.startupDelay.delay = (window.startupDelay.endTime - window.startupDelay.startTime) / 1000; // Em segundos
+                document.getElementById('startupDelay').innerText = `Startup Delay measured: ${window.startupDelay.delay.toFixed(6)} seconds`;
+            });
+
+            player.getVideoElement().play();
+        }
+
+
+        function getCurrentPlaybackTime(){
+            return player.getVideoElement().currentTime; 
+        }
+
+
+
+
+        captureStartupDelay();
+
+        setInterval(function() {
+            document.getElementById('averageThroughput').innerText = "Average Throughput: " + (getAvgThroughput() / 1000).toFixed(2) + " Mbps";
+            document.getElementById('currentQuality').innerText = "Current Quality: " + getQuality();
+            document.getElementById('droppedFrames').innerText = "Dropped Frames: " + getDroppedFrames();
+            document.getElementById('isBuffering').innerText = "Is Buffering: " + isBuffering();
+            document.getElementById('currentBufferLevel').innerText = "Current Buffer Level: " + getCurrentBufferLevel() + " seconds";
+            document.getElementById('bufferEvents').innerText = "Buffer Events: " + getBufferEvents();
+            document.getElementById('bufferLength').innerText = "Buffer Length: " + getBufferLength();
+            document.getElementById('currentRepresentationSwitch').innerText = "Current Representation Switch: " + getActualRepresentation();
+            document.getElementById('currentPlaybackTime').innerText = "Current Playback Time: " + getCurrentPlaybackTime();
+
+            var qualityLevels = getQualityLevels();
+            if (qualityLevels) {
+                var qualityText = "Quality Levels: ";
+                qualityLevels.forEach(function(level, index) {
+                    qualityText += `Level ${index}: ${level.bandwidth} bps; `;
+                });
+                document.getElementById('qualityLevels').innerText = qualityText;
+            } else {
+                document.getElementById('qualityLevels').innerText = "Quality Levels: undefined";
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

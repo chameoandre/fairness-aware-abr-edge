@@ -1,0 +1,11 @@
+{
+    "avg_throughput": 0.15,
+    "avg_buffer_level": 0.05,
+    "latency": -0.1,
+    "jitter": -0.05,
+    "quality_changes_total": -0.05, 
+    "composite_qoe_score": 0.35,
+    "tf_qoe_score": 0.1,
+    "bitrate_fairness_index": 0.05,
+    "qoe_fairness_score": 0.1
+}

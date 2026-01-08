@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Logs and runtime outputs
+logs/
+nohup.out
+*.log
+
+# Generated data
+*.csv
+graphs/
+simulations/
+
+# Models
+rl-model/
+
+# OS
+.DS_Store
+#Thumbs.db

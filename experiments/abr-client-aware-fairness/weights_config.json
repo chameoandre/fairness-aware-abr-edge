@@ -1,0 +1,10 @@
+{
+    "buffering_time": -0.15,
+    "playback_interruptions": -0.2,
+    "avg_throughput": 0.25,
+    "latency": -0.15,
+    "jitter": -0.05,
+    "avg_buffer_level": 0.1,
+    "quality_changes_total": -0.05,
+    "dropped_frames_total": -0.05
+}

@@ -1,0 +1,28 @@
+FROM nginx:latest
+
+RUN apt-get update && \
+apt-get install -y wget gcc make libpcre3 libpcre3-dev zlib1g zlib1g-dev libssl-dev
+
+RUN mkdir /usr/src/nginx && \
+cd /usr/src/nginx && \
+wget http://nginx.org/download/nginx-1.21.4.tar.gz && \
+tar -xzvf nginx-1.21.4.tar.gz && \
+wget https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/get/master.tar.gz && \
+tar -xzvf master.tar.gz
+
+RUN cd /usr/src/nginx/nginx-1.21.4 && \
+./configure --with-http_ssl_module --add-module=/usr/src/nginx/nginx-goodies-nginx-sticky-module-ng-* && \
+make && \
+make install
+
+# Criar um link simbólico para o nginx
+RUN ln -sf /usr/local/nginx/sbin/nginx /usr/sbin/nginx
+
+# COPY ./conf.d/edge1.conf /etc/nginx/conf.d/default.conf
+COPY ./conf.d/load_balancer.conf /etc/nginx/conf.d/default.conf
+
+# CMD ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off;", "-c", "/etc/nginx/conf.d/default.conf"]
+
+# Limpeza de arquivos temporários para reduzir o tamanho da imagem
+RUN rm -rf /usr/src/nginx
